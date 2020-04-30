@@ -33,24 +33,46 @@ const typeDefs = gql`
   }
 `;
 
+const characters = [
+  {
+    id: "frodo",
+    name: "Froddo Baggins",
+  },
+  {
+    id: "yoko",
+    name: "Yoko Nakajima",
+  },
+  {
+    id: "gollum",
+    name: "Gollum",
+  },
+  {
+    id: "kaladin",
+    name: "Kaladin Stormblessed",
+  },
+];
+
 const books = [
   {
     id: "123456789",
     title: "Twelve Kingdoms",
     releaseDate: "2000-10-10",
     rating: 5,
+    characters: [{ id: "yoko" }],
   },
   {
     id: "23456789",
     title: "Archives of the Stormlight",
     releaseDate: "2009-08-20",
     rating: 5,
+    characters: [{ id: "kaladin" }],
   },
   {
     id: "3456789",
     title: "Lord of the Rings",
     releaseDate: "1963-05-30",
     rating: 5,
+    characters: [{ id: "frodo" }, { id: "gollum" }],
   },
 ];
 
@@ -68,6 +90,25 @@ const resolvers = {
     },
   },
 
+  Book: {
+    characters: (obj, args, context, info) => {
+      obj;
+      console.log(obj);
+
+      const characterIds = obj.characters.map((character) => character.id);
+      const filteredCharacters = characters.filter((character) => {
+        return characterIds.includes(character.id);
+      });
+
+      return filteredCharacters;
+    },
+  },
+
+  //   (obj, args, context, info) => {
+  //   console.log(obj);
+  //   return obj;
+  // },
+
   Date: new GraphQLScalarType({
     name: "Date",
     description: "It's a date field.",
@@ -77,7 +118,7 @@ const resolvers = {
     },
     serialize(value) {
       //value sent to the client
-      return value.getTime();
+      return new Date(value).getTime();
     },
     parseLiteral(ast) {
       if (ast.kind === Kind.INT) {
