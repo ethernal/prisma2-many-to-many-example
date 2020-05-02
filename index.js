@@ -31,6 +31,23 @@ const typeDefs = gql`
     books: [Book]
     book(id: ID): Book
   }
+
+  input CharacterInput {
+    id: ID
+  }
+
+  input BookInput {
+    id: ID
+    title: String
+    releaseDate: Date
+    rating: Int
+    status: Status
+    characters: [CharacterInput]
+  }
+
+  type Mutation {
+    addBook(book: BookInput): [Book]
+  }
 `;
 
 const characters = [
@@ -92,9 +109,6 @@ const resolvers = {
 
   Book: {
     characters: (obj, args, context, info) => {
-      obj;
-      console.log(obj);
-
       const characterIds = obj.characters.map((character) => character.id);
       const filteredCharacters = characters.filter((character) => {
         return characterIds.includes(character.id);
@@ -104,11 +118,12 @@ const resolvers = {
     },
   },
 
-  //   (obj, args, context, info) => {
-  //   console.log(obj);
-  //   return obj;
-  // },
-
+  Mutation: {
+    addBook: (obj, { book }, context, info) => {
+      const newBooksList = [...books, book];
+      return newBooksList;
+    },
+  },
   Date: new GraphQLScalarType({
     name: "Date",
     description: "It's a date field.",
@@ -134,6 +149,12 @@ const server = new ApolloServer({
   resolvers,
   introspection: true,
   playground: true,
+  context: ({ req }) => {
+    const fakeUser = {
+      userId: "helloUser",
+    };
+    return { ...fakeUser };
+  },
 });
 
 server
