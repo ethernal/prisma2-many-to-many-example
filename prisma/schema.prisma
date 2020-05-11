@@ -9,3 +9,40 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
+enum Status {
+    READING
+    READ
+    INTERESTED
+    NOT_INTERESTED
+    UNKNOWN
+  }
+
+model Book {
+  id          String      @id @default(uuid())
+  createdAt   DateTime?   @default(now())
+  updatedAt   DateTime?   @updatedAt
+  title       String?
+  rating      Int?        @default(0)
+  status      Status?     @default(UNKNOWN)
+  releaseDate String?
+  isbn10      String?
+  isbn13      String?
+  characters  BookCharacters[]
+}
+
+model Character {
+  id          Int         @id @default(uuid())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime?   @updatedAt
+  name        String
+  books       BookCharacters[]
+}
+
+model BookCharacters {
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime?   @updatedAt
+  book        Book        @relation(fields:[bookId], references:[id])
+  character   Character   @relation(fields:[characterId], references:[id])
+
+}

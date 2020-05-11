@@ -2,6 +2,9 @@ const { ApolloServer, gql } = require("apollo-server");
 const { GraphQLScalarType } = require("graphql");
 const { Kind } = require("graphql/language");
 
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
 const typeDefs = gql`
   scalar Date
 
@@ -19,12 +22,15 @@ const typeDefs = gql`
   }
 
   type Book {
-    id: ID!
-    title: String
+    id: ID
+    title: String!
     releaseDate: Date
     rating: Int
     status: Status
+    isbn10: String
+    isbn13: String
     characters: [Character]
+    createdAt: Date
   }
 
   type Query {
@@ -42,6 +48,8 @@ const typeDefs = gql`
     releaseDate: Date
     rating: Int
     status: Status
+    isbn10: String
+    isbn13: String
     characters: [CharacterInput]
   }
 
@@ -50,78 +58,55 @@ const typeDefs = gql`
   }
 `;
 
-const characters = [
-  {
-    id: "frodo",
-    name: "Froddo Baggins",
-  },
-  {
-    id: "yoko",
-    name: "Yoko Nakajima",
-  },
-  {
-    id: "gollum",
-    name: "Gollum",
-  },
-  {
-    id: "kaladin",
-    name: "Kaladin Stormblessed",
-  },
-];
-
-const books = [
-  {
-    id: "123456789",
-    title: "Twelve Kingdoms",
-    releaseDate: "2000-10-10",
-    rating: 5,
-    characters: [{ id: "yoko" }],
-  },
-  {
-    id: "23456789",
-    title: "Archives of the Stormlight",
-    releaseDate: "2009-08-20",
-    rating: 5,
-    characters: [{ id: "kaladin" }],
-  },
-  {
-    id: "3456789",
-    title: "Lord of the Rings",
-    releaseDate: "1963-05-30",
-    rating: 5,
-    characters: [{ id: "frodo" }, { id: "gollum" }],
-  },
-];
-
 const resolvers = {
   Query: {
-    books: () => {
-      return books;
+    books: async () => {
+      try {
+        return await prisma.book.findMany({});
+      } catch (e) {
+        console.error("Error in BOOKS Query: ", e);
+      }
     },
-    book: (obj, args, context, info) => {
-      const { id } = args;
-      const foundBook = books.find((book) => {
-        return book.id === id;
-      });
-      return foundBook;
+    book: async (obj, args, context, info) => {
+      try {
+        const { id, title } = args;
+        return await prisma.book.findOne({
+          where: {
+            id: id,
+          },
+        });
+      } catch (e) {
+        console.error("Error in BOOK Query: ", e);
+      }
     },
   },
 
+  // define Book->characters field
   Book: {
     characters: (obj, args, context, info) => {
-      const characterIds = obj.characters.map((character) => character.id);
-      const filteredCharacters = characters.filter((character) => {
-        return characterIds.includes(character.id);
-      });
-
-      return filteredCharacters;
+      if (obj.characters) {
+        prisma.findMany;
+      }
+      return null;
     },
   },
 
   Mutation: {
-    addBook: (obj, { book }, context, info) => {
-      const newBooksList = [...books, book];
-      return newBooksList;
+    addBook: async (obj, { book }, context, info) => {
+      try {
+        await prisma.book.create({
+          data: {
+            ...book,
+          },
+        });
+
+        const allBooks = await prisma.book.findMany({});
+
+        return allBooks;
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
     },
   },
   Date: new GraphQLScalarType({
@@ -129,16 +114,37 @@ const resolvers = {
     description: "It's a date field.",
     parseValue(value) {
       // value from the client
-      return new Date(value);
+      console.log(value);
+      return new Intl.DateTimeFormat("pl-PL", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }).format(value);
     },
     serialize(value) {
-      //value sent to the client
-      return new Date(value).getTime();
+      // value sent to the client
+
+      const dateTime = new Date(value);
+
+      const result = new Intl.DateTimeFormat("pl-PL", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }).format(dateTime);
+      return result;
     },
     parseLiteral(ast) {
-      if (ast.kind === Kind.INT) {
+      if (ast.kind === Kind.STRING || ast.kind === Kind.INT) {
+        // console.log("Parsing to Date");
         return new Date(ast.value);
       }
+
       return null;
     },
   }),
