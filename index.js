@@ -1,4 +1,4 @@
-const { ApolloServer, gql } = require("apollo-server");
+const { ApolloServer, gql, PubSub } = require("apollo-server");
 const { GraphQLScalarType } = require("graphql");
 const { Kind } = require("graphql/language");
 
@@ -56,9 +56,24 @@ const typeDefs = gql`
   type Mutation {
     addBook(book: BookInput): [Book]
   }
+
+  type Subscription {
+    bookAdded: Book
+  }
 `;
 
+const pubsub = new PubSub();
+const BOOK_ADDED = "BOOK_ADDED";
+
 const resolvers = {
+  Subscription: {
+    bookAdded: {
+      subscribe: () => {
+        return pubsub.asyncIterator([BOOK_ADDED]);
+      },
+    },
+  },
+
   Query: {
     books: async () => {
       try {
@@ -83,22 +98,33 @@ const resolvers = {
 
   // define Book->characters field
   Book: {
-    characters: (obj, args, context, info) => {
-      if (obj.characters) {
-        prisma.findMany;
-      }
-      return null;
+    characters: async (obj, args, context, info) => {
+      let characters = [];
+
+      characters = await prisma.bookCharacters.findMany({
+        where: { bookId: obj.id },
+        include: {
+          character: true,
+        },
+      });
+
+      const charactersList = characters.map((character) => character.character);
+      console.log("charactersList", charactersList);
+
+      return charactersList;
     },
   },
 
   Mutation: {
     addBook: async (obj, { book }, context, info) => {
       try {
-        await prisma.book.create({
+        const newBook = await prisma.book.create({
           data: {
             ...book,
           },
         });
+
+        pubsub.publish(BOOK_ADDED, { bookAdded: newBook });
 
         const allBooks = await prisma.book.findMany({});
 
@@ -114,7 +140,6 @@ const resolvers = {
     description: "It's a date field.",
     parseValue(value) {
       // value from the client
-      console.log(value);
       return new Intl.DateTimeFormat("pl-PL", {
         year: "numeric",
         month: "2-digit",
