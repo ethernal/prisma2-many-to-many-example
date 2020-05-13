@@ -109,7 +109,6 @@ const resolvers = {
       });
 
       const charactersList = characters.map((character) => character.character);
-      console.log("charactersList", charactersList);
 
       return charactersList;
     },
