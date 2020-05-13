@@ -127,7 +127,49 @@ const seedDB = async () => {
     },
   });
 
-  console.log();
+  await prisma.bookCharacters.create({
+    data: {
+      book: {
+        connect: { id: twk2.id },
+      },
+      character: {
+        connect: { id: rakshuun.id },
+      },
+    },
+  });
+
+  await prisma.bookCharacters.create({
+    data: {
+      book: {
+        connect: { id: twk2.id },
+      },
+      character: {
+        connect: { id: yoko.id },
+      },
+    },
+  });
+
+  await prisma.bookCharacters.create({
+    data: {
+      book: {
+        connect: { id: lotr.id },
+      },
+      character: {
+        connect: { id: frodo.id },
+      },
+    },
+  });
+
+  await prisma.bookCharacters.create({
+    data: {
+      book: {
+        connect: { id: sa1.id },
+      },
+      character: {
+        connect: { id: kaladin.id },
+      },
+    },
+  });
 
   const validateBook = await prisma.book.findMany({
     where: { id: twk1.id },
