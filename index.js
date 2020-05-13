@@ -99,18 +99,18 @@ const resolvers = {
   // define Book->characters field
   Book: {
     characters: async (obj, args, context, info) => {
-      let characters = [];
-
-      characters = await prisma.bookCharacters.findMany({
-        where: { bookId: obj.id },
-        include: {
+      const charactersList = await prisma.bookCharacters.findMany({
+        select: {
           character: true,
+        },
+        where: {
+          bookId: obj.id,
         },
       });
 
-      const charactersList = characters.map((character) => character.character);
+      const characters = charactersList.map((character) => character.character);
 
-      return charactersList;
+      return characters;
     },
   },
 
