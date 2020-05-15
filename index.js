@@ -16,6 +16,26 @@ const typeDefs = gql`
     UNKNOWN
   }
 
+  enum CharacterRole {
+    NOT_SET
+    PROTAGONIST
+    ANTAGONIST
+    DEUTERAGONIST
+    TETRIARY
+    LOVE_INTEREST
+    CONFIDANT
+    FOIL
+  }
+
+  enum CharacterType {
+    NOT_SET
+    DYNAMIC
+    STATIC
+    STOCK
+    SYMBOLIC
+    ROUND
+  }
+
   type Character {
     id: ID
     name: String
@@ -51,6 +71,13 @@ const typeDefs = gql`
     isbn10: String
     isbn13: String
     characters: [CharacterInput]
+  }
+
+  type BookCharacters {
+    book: Book
+    character: Character
+    roleInBook: CharacterRole
+    typeInBook: CharacterType
   }
 
   type Mutation {
@@ -99,18 +126,19 @@ const resolvers = {
   // define Book->characters field
   Book: {
     characters: async (obj, args, context, info) => {
-      const charactersList = await prisma.bookCharacters.findMany({
-        select: {
-          character: true,
-        },
+      const charactersList = await prisma.character.findMany({
         where: {
-          bookId: obj.id,
+          books: {
+            every: {
+              bookId: {
+                equals: obj.id,
+              },
+            },
+          },
         },
       });
 
-      const characters = charactersList.map((character) => character.character);
-
-      return characters;
+      return charactersList;
     },
   },
 
