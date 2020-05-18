@@ -1,6 +1,7 @@
 const { ApolloServer, gql, PubSub } = require("apollo-server");
 const { GraphQLScalarType } = require("graphql");
 const { Kind } = require("graphql/language");
+const util = require("util");
 
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
@@ -39,6 +40,8 @@ const typeDefs = gql`
   type Character {
     id: ID
     name: String
+    roleInBook: CharacterRole
+    typeInBook: CharacterType
   }
 
   type Book {
@@ -124,12 +127,30 @@ const resolvers = {
   },
 
   // define Book->characters field
+
+  Book: {
+    Character: {
+      roleInBook: async (parent, args, context, info) => {
+        console.log("args in role", args);
+        console.log("parent", parent);
+
+        return await prisma.bookCharacters.findMany({
+          where: { id: parent.id },
+        });
+      },
+    },
+  },
+
   Book: {
     characters: async (obj, args, context, info) => {
+      console.log(obj.title);
+      console.log(obj.id + "\n");
+      // console.log(util.inspect(info, false, null, true));
+
       const charactersList = await prisma.character.findMany({
         where: {
           books: {
-            every: {
+            some: {
               bookId: {
                 equals: obj.id,
               },
@@ -141,6 +162,15 @@ const resolvers = {
       return charactersList;
     },
   },
+
+  // Character: {
+  //   roleInBook: (parent, args, context, info) => {
+  //     // console.log("parent:", parent);
+  //     // console.log("info", util.inspect(info, true, null, true));
+
+  //     return null;
+  //   },
+  // },
 
   Mutation: {
     addBook: async (obj, { book }, context, info) => {
