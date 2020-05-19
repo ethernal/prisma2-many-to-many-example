@@ -22,7 +22,7 @@ const typeDefs = gql`
     PROTAGONIST
     ANTAGONIST
     DEUTERAGONIST
-    TETRIARY
+    TERTIARY
     LOVE_INTEREST
     CONFIDANT
     FOIL
@@ -78,7 +78,7 @@ const typeDefs = gql`
 
   type BookCharacters {
     book: Book
-    character: Character
+    name: String
     roleInBook: CharacterRole
     typeInBook: CharacterType
   }
@@ -129,48 +129,32 @@ const resolvers = {
   // define Book->characters field
 
   Book: {
-    Character: {
-      roleInBook: async (parent, args, context, info) => {
-        console.log("args in role", args);
-        console.log("parent", parent);
-
-        return await prisma.bookCharacters.findMany({
-          where: { id: parent.id },
-        });
-      },
-    },
-  },
-
-  Book: {
-    characters: async (obj, args, context, info) => {
-      console.log(obj.title);
-      console.log(obj.id + "\n");
-      // console.log(util.inspect(info, false, null, true));
-
-      const charactersList = await prisma.character.findMany({
+    characters: async (parent, args, context, info) => {
+      const characterList = await prisma.bookCharacters.findMany({
         where: {
-          books: {
-            some: {
-              bookId: {
-                equals: obj.id,
-              },
-            },
+          bookId: {
+            equals: parent.id,
           },
+        },
+        include: {
+          character: true,
         },
       });
 
-      return charactersList;
+      const characterInfo = characterList.map((character) => {
+        const pureCharacter = { ...character };
+        delete pureCharacter.character;
+
+        //keep character at the bottom as this will preserve the character createdAt and modifiedAt fields although modifiedAt should be taken from the BookCharacters in general.
+        return {
+          ...pureCharacter,
+          ...character.character,
+        };
+      });
+
+      return characterInfo;
     },
   },
-
-  // Character: {
-  //   roleInBook: (parent, args, context, info) => {
-  //     // console.log("parent:", parent);
-  //     // console.log("info", util.inspect(info, true, null, true));
-
-  //     return null;
-  //   },
-  // },
 
   Mutation: {
     addBook: async (obj, { book }, context, info) => {
