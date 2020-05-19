@@ -40,6 +40,11 @@ const typeDefs = gql`
   type Character {
     id: ID
     name: String
+  }
+
+  type CharacterWithBookMetadata {
+    id: ID
+    name: String
     roleInBook: CharacterRole
     typeInBook: CharacterType
   }
@@ -52,13 +57,16 @@ const typeDefs = gql`
     status: Status
     isbn10: String
     isbn13: String
-    characters: [Character]
+    characters: [CharacterWithBookMetadata]
     createdAt: Date
   }
 
   type Query {
     books: [Book]
     book(id: ID): Book
+    characters: [Character]
+    character(id: ID): Character
+    charactersInBook(bookId: ID): [CharacterWithBookMetadata]
   }
 
   input CharacterInput {
@@ -105,6 +113,14 @@ const resolvers = {
   },
 
   Query: {
+    characters: async () => {
+      try {
+        return prisma.character.findMany({});
+      } catch (e) {
+        console.error("Error in Characters Query: ", e);
+      }
+    },
+
     books: async () => {
       try {
         return await prisma.book.findMany({});
