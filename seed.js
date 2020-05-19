@@ -9,7 +9,7 @@ const seedDB = async () => {
     await prisma.bookCharacters.deleteMany({});
     await prisma.character.deleteMany({});
     await prisma.book.deleteMany({});
-    console.log("Data..DELETED");
+    console.log("Data... DELETED");
   }
 
   console.log("Seeding DB with data..");
@@ -113,6 +113,8 @@ const seedDB = async () => {
       character: {
         connect: { id: yoko.id },
       },
+      roleInBook: "PROTAGONIST",
+      typeInBook: "DYNAMIC",
     },
   });
 
@@ -124,6 +126,8 @@ const seedDB = async () => {
       character: {
         connect: { id: rakshuun.id },
       },
+      roleInBook: "DEUTERAGONIST",
+      typeInBook: "ROUND",
     },
   });
 
@@ -135,6 +139,8 @@ const seedDB = async () => {
       character: {
         connect: { id: rakshuun.id },
       },
+      roleInBook: "DEUTERAGONIST",
+      typeInBook: "ROUND",
     },
   });
 
@@ -146,6 +152,8 @@ const seedDB = async () => {
       character: {
         connect: { id: yoko.id },
       },
+      roleInBook: "PROTAGONIST",
+      typeInBook: "DYNAMIC",
     },
   });
 
@@ -157,6 +165,21 @@ const seedDB = async () => {
       character: {
         connect: { id: frodo.id },
       },
+      roleInBook: "PROTAGONIST",
+      typeInBook: "DYNAMIC",
+    },
+  });
+
+  await prisma.bookCharacters.create({
+    data: {
+      book: {
+        connect: { id: lotr.id },
+      },
+      character: {
+        connect: { id: gollum.id },
+      },
+      roleInBook: "FOIL",
+      typeInBook: "SYMBOLIC",
     },
   });
 
@@ -168,6 +191,8 @@ const seedDB = async () => {
       character: {
         connect: { id: kaladin.id },
       },
+      roleInBook: "PROTAGONIST",
+      typeInBook: "DYNAMIC",
     },
   });
 
