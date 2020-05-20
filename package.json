@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@prisma/cli": "^2.0.0-beta.5",
+    "apollo-server-testing": "^2.13.1",
     "cross-env": "^7.0.2"
   }
 }
