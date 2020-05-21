@@ -19,7 +19,7 @@ const resolvers = {
 
   Query: {
     books: async (parent, args, context, info) => {
-      console.log("parent of Query->books: ", parent);
+      console.log("Running Query->books");
 
       try {
         return await prisma.book.findMany({});
@@ -29,6 +29,8 @@ const resolvers = {
       }
     },
     book: async (obj, args, context, info) => {
+      console.log("Running Query->book");
+
       try {
         const { id, title } = args;
         return await prisma.book.findOne({
@@ -42,7 +44,10 @@ const resolvers = {
       }
     },
     character: async (parent, { id }, context, info) => {
-      return prisma.character.findOne({
+      console.log("id", id);
+      console.log("Running Query->character");
+
+      const character = await prisma.character.findOne({
         where: { id: id },
         include: {
           books: {
@@ -50,8 +55,13 @@ const resolvers = {
           },
         },
       });
+      console.log("character", character);
+
+      return character;
     },
     characters: async () => {
+      console.log("Running Query->characters");
+
       try {
         return prisma.character.findMany({});
       } catch (e) {
@@ -61,15 +71,19 @@ const resolvers = {
     },
 
     charactersInBook: async (parent, args, context, info) => {
+      console.log("Running Query->charactersInBook");
+
       try {
-        return prisma.bookCharacters.findMany({
-          select: {
+        const characters = await prisma.bookCharacters.findMany({
+          include: {
             character: true,
           },
           where: {
             bookId: args.bookId,
           },
         });
+        console.log("characters", characters);
+        return characters;
       } catch (e) {
         console.error("Error in Characters Query: ", e);
         throw e;
@@ -81,20 +95,24 @@ const resolvers = {
 
   Character: {
     books: async (parent, args, context, info) => {
-      console.log("args", args);
-      console.log(util.inspect(parent, false, null, true));
+      console.log("Running Character->books mapping");
+
+      // console.log("args", args);
+      // console.log(util.inspect(parent, false, null, true));
 
       const booksWithCharacter = await prisma.bookCharacters.findMany({
-        select: { book: true },
+        include: { book: true },
         where: { characterId: { every: args.id } },
       });
 
-      return [{ title: "Something" }];
+      return booksWithCharacter;
     },
   },
 
   Book: {
     characters: async (parent, args, context, info) => {
+      console.log("Running Book->characters mapping");
+
       const characterList = await prisma.bookCharacters.findMany({
         where: {
           bookId: {
