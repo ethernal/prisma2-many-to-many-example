@@ -29,6 +29,7 @@ model Book {
   isbn10      String?
   isbn13      String?
   characters  BookCharacters[]
+  quotes      Quote[]
 }
 
 model Character {
@@ -37,7 +38,18 @@ model Character {
   updatedAt   DateTime?   @updatedAt
   name        String
   books       BookCharacters[]
+  quotes      Quote[]
 }
+
+model Quote {
+  id          String        @id @default(uuid())
+  quoteText   String
+  character   Character? @relation(fields: [characterId], references: [id])
+  characterId String?
+  book        Book      @relation(fields: [bookId], references:[id])
+  bookId      String
+}
+
 // https://blog.reedsy.com/types-of-characters/
 
 enum CharacterRole {
