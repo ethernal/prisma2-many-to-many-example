@@ -40,25 +40,21 @@ const typeDefs = gql`
   type Character {
     id: ID
     name: String
-  }
-
-  type CharacterWithBookMetadata {
-    id: ID
-    name: String
     roleInBook: CharacterRole
     typeInBook: CharacterType
+    books: [BookCharacters]
   }
 
   type Book {
     id: ID
+    createdAt: Date
     title: String!
     releaseDate: Date
     rating: Int
     status: Status
     isbn10: String
     isbn13: String
-    characters: [CharacterWithBookMetadata]
-    createdAt: Date
+    characters: [Character]
   }
 
   type Query {
@@ -66,7 +62,7 @@ const typeDefs = gql`
     book(id: ID): Book
     characters: [Character]
     character(id: ID): Character
-    charactersInBook(bookId: ID): [CharacterWithBookMetadata]
+    charactersInBook(bookId: ID): [Character]
   }
 
   input CharacterInput {
@@ -86,7 +82,6 @@ const typeDefs = gql`
 
   type BookCharacters {
     book: Book
-    name: String
     roleInBook: CharacterRole
     typeInBook: CharacterType
   }
@@ -113,19 +108,14 @@ const resolvers = {
   },
 
   Query: {
-    characters: async () => {
-      try {
-        return prisma.character.findMany({});
-      } catch (e) {
-        console.error("Error in Characters Query: ", e);
-      }
-    },
+    books: async (parent, args, context, info) => {
+      console.log("parent of Query->books: ", parent);
 
-    books: async () => {
       try {
         return await prisma.book.findMany({});
       } catch (e) {
         console.error("Error in BOOKS Query: ", e);
+        throw e;
       }
     },
     book: async (obj, args, context, info) => {
@@ -138,11 +128,60 @@ const resolvers = {
         });
       } catch (e) {
         console.error("Error in BOOK Query: ", e);
+        throw e;
+      }
+    },
+    character: async (parent, { id }, context, info) => {
+      return prisma.character.findOne({
+        where: { id: id },
+        include: {
+          books: {
+            include: { book: true },
+          },
+        },
+      });
+    },
+    characters: async () => {
+      try {
+        return prisma.character.findMany({});
+      } catch (e) {
+        console.error("Error in Characters Query: ", e);
+        throw e;
+      }
+    },
+
+    charactersInBook: async (parent, args, context, info) => {
+      try {
+        return prisma.bookCharacters.findMany({
+          select: {
+            character: true,
+          },
+          where: {
+            bookId: args.bookId,
+          },
+        });
+      } catch (e) {
+        console.error("Error in Characters Query: ", e);
+        throw e;
       }
     },
   },
 
   // define Book->characters field
+
+  Character: {
+    books: async (parent, args, context, info) => {
+      console.log("args", args);
+      console.log(util.inspect(parent, false, null, true));
+
+      const booksWithCharacter = await prisma.bookCharacters.findMany({
+        select: { book: true },
+        where: { characterId: { every: args.id } },
+      });
+
+      return [{ title: "Something" }];
+    },
+  },
 
   Book: {
     characters: async (parent, args, context, info) => {
@@ -192,9 +231,10 @@ const resolvers = {
       }
     },
   },
+
   Date: new GraphQLScalarType({
     name: "Date",
-    description: "It's a date field.",
+    description: "Date custom scalar type",
     parseValue(value) {
       // value from the client
       return new Intl.DateTimeFormat("pl-PL", {
@@ -209,8 +249,6 @@ const resolvers = {
     serialize(value) {
       // value sent to the client
 
-      const dateTime = new Date(value);
-
       const result = new Intl.DateTimeFormat("pl-PL", {
         year: "numeric",
         month: "2-digit",
@@ -218,13 +256,13 @@ const resolvers = {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
-      }).format(dateTime);
+      }).format(value);
       return result;
     },
     parseLiteral(ast) {
       if (ast.kind === Kind.STRING || ast.kind === Kind.INT) {
         // console.log("Parsing to Date");
-        return new Date(ast.value);
+        return new Date(+ast.value);
       }
 
       return null;
